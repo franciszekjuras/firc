@@ -16,10 +16,12 @@ struct fir_s; typedef struct fir_s fir_t;
 #define BASE_SHIFT 7
 #define FIR_COEFS_BASE 1
 #define FIR_UPSAMPL_COEFS_BASE 81
-#define FIR_SAMPLES_OFF 32
+#define FIR_SAMPLES_OFF 2048
 
 #define FIR_SAMPLES_NR 10
 #define FIR_SAMPLES_DEPTH 5
+#define FIR_BLOCK_SAMPLES_NR 2048
+#define FIR_DEBUG_BLOCKS_NR 59
 
 #define FIR_MAX_COEFS 6400
 #define FIR_MAX_UPSAMPL_COEFS 1024
@@ -54,6 +56,7 @@ struct fir_conf_s{
 		//read|write
 /*20*/	uint32_t switches;
 /*21*/	int32_t coefs_crr_nr;
+/*22*/	int32_t crr_debug_block;
 };
 
 struct fir_s{

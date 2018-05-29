@@ -61,7 +61,8 @@ Change internal constant FIR_MAX_COEFS.\n",
 4. Display info\n\
 5. Clear filter\n\
 7. Enable snap record\n\
-8. Disable snap record and take snapshot\n");
+8. Disable snap record and take snapshot\n\
+9. Block ram snapshot\n");
         if(scanf("%d", &choice) < 1){
             cont = 0;
             continue;
@@ -114,15 +115,14 @@ Change internal constant FIR_MAX_COEFS.\n",
             fprintf(stdout, "Read %d coefficients.\n", coefs_read);
             if(overflow == 1)
                 fprintf(stderr, "Warning: Not all coefficients have been read.\n");
-            else{
-                fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
-                int k = 0; int tm = fir.conf->tm; int fir_dsp_nr = fir.conf->fir_dsp_nr;
-                for(int i = 0; i < tm; ++i)
-                    for(int j = 0; j < fir_dsp_nr; ++j)
-                        fir.coefs[(j<<BASE_SHIFT)+i] = coefs[k++];
-                fir.conf->coefs_crr_nr = coefs_read;
-                fprintf(stdout, "Done.\n");
-            }
+            
+            fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
+            int k = 0; int tm = fir.conf->tm; int fir_dsp_nr = fir.conf->fir_dsp_nr;
+            for(int i = 0; i < tm; ++i)
+                for(int j = 0; j < fir_dsp_nr; ++j)
+                    fir.coefs[(j<<BASE_SHIFT)+i] = coefs[k++];
+            fir.conf->coefs_crr_nr = coefs_read;
+            fprintf(stdout, "Done.\n");
         }
 
         else if(choice == 2){ //merge into switch en/dis
@@ -156,6 +156,21 @@ Change internal constant FIR_MAX_COEFS.\n",
                     fprintf(snaps_file, "%d\t", fir.samples[(i*FIR_SAMPLES_DEPTH)+j]);
                 }
                 fprintf(snaps_file, "\n");
+            }
+            fclose(snaps_file);
+        }
+        else if(choice == 9){
+            SWITCH_OFF(SWITCH_FIR_SNAP, fir.conf->switches);
+            FILE* snaps_file = fopen("snaps.dat","w");
+            if(snaps_file == NULL){
+                printf("Couldn't open file snaps.dat for writing.\n");
+                continue;
+            }
+            for(int i = 0; i < FIR_DEBUG_BLOCKS_NR; ++i){
+                fir.conf->crr_debug_block = i;
+                for(int j = 0; j < FIR_BLOCK_SAMPLES_NR; ++j){
+                    fprintf(snaps_file, "%d\n", fir.samples[j]);
+                }
             }
             fclose(snaps_file);
         }
