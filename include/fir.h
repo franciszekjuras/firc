@@ -23,15 +23,14 @@ struct fir_s; typedef struct fir_s fir_t;
 #define FIR_BLOCK_SAMPLES_NR 2048
 #define FIR_DEBUG_BLOCKS_NR 59
 
-#define FIR_MAX_COEFS 6400
-#define FIR_MAX_UPSAMPL_COEFS 2560
+#define FIR_MAX_COEFS 10000
+#define FIR_MAX_UPSAMPL_COEFS 3000
 #define SWITCH_ON(bit,var) ((var)|=(1<<(bit)))
 #define SWITCH_OFF(bit,var) ((var)&=(~(1<<(bit))))
 
 struct fir_conf_s{
 		//read-only
-/*0:1*/	char 	info [8];
-/*2*/	int32_t unused2;
+/*0:2*/	char 	info [12];
 /*3*/	int32_t unused3;
 		
 /*4*/	int32_t coefs_max_nr;
