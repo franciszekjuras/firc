@@ -92,7 +92,7 @@ Change internal constant FIR_MAX_UPSAMPL_COEFS.\n",
                 fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
                 int k = 0; int tm = fir.conf->tm; int upsamp_dsp_nr = fir.conf->upsamp_dsp_nr;
                 for(int j = 0; j < upsamp_dsp_nr; ++j)
-                    for(int i = 0; i < tm; --i)
+                    for(int i = 0; i < tm; ++i)
                         fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = upsamp_coefs[k++];
                 
                 fprintf(stdout, "Done.\n");
