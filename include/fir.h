@@ -24,7 +24,7 @@ struct fir_s; typedef struct fir_s fir_t;
 #define FIR_DEBUG_BLOCKS_NR 59
 
 #define FIR_MAX_COEFS 6400
-#define FIR_MAX_UPSAMPL_COEFS 1024
+#define FIR_MAX_UPSAMPL_COEFS 2560
 #define SWITCH_ON(bit,var) ((var)|=(1<<(bit)))
 #define SWITCH_OFF(bit,var) ((var)&=(~(1<<(bit))))
 

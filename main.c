@@ -34,7 +34,7 @@ int main(void){
     if(FIR_MAX_COEFS < fir.conf->coefs_max_nr){
         fprintf(stderr, 
             "Only %d coefficients can be read,\
-while filter can take %d.\n\
+while FIR filter can take %d.\n\
 Change internal constant FIR_MAX_COEFS.\n",
             FIR_MAX_COEFS, fir.conf->coefs_max_nr);
         close_fir(&fir); fpga_disconnect(&fpga);
@@ -44,9 +44,9 @@ Change internal constant FIR_MAX_COEFS.\n",
     if(FIR_MAX_UPSAMPL_COEFS < fir.conf->coefs_upsamp_nr){
         fprintf(stderr, 
             "Only %d coefficients can be read,\
-while filter can take %d.\n\
-Change internal constant FIR_MAX_COEFS.\n",
-            FIR_MAX_COEFS, fir.conf->coefs_max_nr);
+while upsampling filter can take %d.\n\
+Change internal constant FIR_MAX_UPSAMPL_COEFS.\n",
+            FIR_MAX_UPSAMPL_COEFS, fir.conf->coefs_upsamp_nr);
         close_fir(&fir); fpga_disconnect(&fpga);
         return -1;
     }
