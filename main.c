@@ -60,6 +60,7 @@ Change internal constant FIR_MAX_UPSAMPL_COEFS.\n",
 3. Disable filter\n\
 4. Display info\n\
 5. Clear filter\n\
+6. Choose snap source\n\
 7. Enable snap record\n\
 8. Disable snap record and take snapshot\n\
 9. Block ram snapshot\n");
@@ -140,6 +141,14 @@ Change internal constant FIR_MAX_UPSAMPL_COEFS.\n",
         else if(choice == 5){ //clear filter
             for(int i = 0; i < fir.conf->coefs_max_nr; i++)
                 fir.coefs[i] = 0;
+        }
+        else if(choice == 6){
+            int debug_source;
+            fprintf(stdout, "Choose debug source: ");
+            if(scanf("%d", &debug_source) == 1)
+                fir.conf->debug_source = debug_source;
+            else
+                fprintf(stdout, "Debug source must be an integer\n");
         }
         else if(choice == 7){
             SWITCH_ON(SWITCH_FIR_SNAP, fir.conf->switches);

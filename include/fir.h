@@ -56,6 +56,7 @@ struct fir_conf_s{
 /*20*/	uint32_t switches;
 /*21*/	int32_t coefs_crr_nr;
 /*22*/	int32_t crr_debug_block;
+/*23*/	int32_t debug_source;
 };
 
 struct fir_s{
