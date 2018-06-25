@@ -24,7 +24,7 @@ struct fir_s; typedef struct fir_s fir_t;
 #define FIR_DEBUG_BLOCKS_NR 59
 
 #define FIR_MAX_COEFS 10000
-#define FIR_MAX_UPSAMPL_COEFS 3000
+#define FIR_MAX_SRC_COEFS 3000
 #define SWITCH_ON(bit,var) ((var)|=(1<<(bit)))
 #define SWITCH_OFF(bit,var) ((var)&=(~(1<<(bit))))
 
@@ -62,6 +62,7 @@ struct fir_conf_s{
 struct fir_s{
 	fir_conf_t* conf;
 	int32_t* coefs;
+	int32_t* dwsamp_coefs;
 	int32_t* upsamp_coefs;
 	int32_t* samples;
 };
