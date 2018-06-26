@@ -88,36 +88,6 @@ Change internal constant FIR_MAX_SRC_COEFS.\n",
             }
 
             int overflow; 
-            int coefs_read = read_coefs(coef_file, upsamp_coefs, fir.conf->coefs_upsamp_nr, &overflow); 
-            fclose(coef_file);       
-            if(coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading coefficients.\n");
-                continue;
-            }
-            fprintf(stdout, "Read %d coefficients.\n", coefs_read);
-            if(overflow == 1)
-                fprintf(stderr, "Warning: Not all coefficients have been read.\n");
-            if(coefs_read != fir.conf->coefs_upsamp_nr){
-                fprintf(stderr, "Error: Number of coefs %d doesn't match expected number of coefs %d.\n", coefs_read, fir.conf->coefs_upsamp_nr);
-            }
-            else{
-                fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
-                int k = 0; int tm = fir.conf->tm; int upsamp_dsp_nr = fir.conf->upsamp_dsp_nr;
-                for(int j = 0; j < upsamp_dsp_nr; ++j)
-                    for(int i = 0; i < tm; ++i)
-                        fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = upsamp_coefs[k++];
-                
-                fprintf(stdout, "Done.\n");
-            }   
-        }
-        else if(choice == 1){
-            FILE* coef_file = open_file_dialog();
-            if(coef_file == NULL){
-                printf("Error: Couldn't open coefficients' file\n");
-                continue;
-            }
-
-            int overflow; 
             int coefs_read = read_coefs(coef_file, dwsamp_coefs, fir.conf->coefs_dwsamp_nr, &overflow); 
             fclose(coef_file);       
             if(coefs_read < 0){
@@ -136,6 +106,36 @@ Change internal constant FIR_MAX_SRC_COEFS.\n",
                 for(int j = 0; j < dwsamp_dsp_nr; ++j)
                     for(int i = tm-1; i >= 0; --i)
                         fir.dwsamp_coefs[(j<<BASE_SHIFT)+i] = dwsamp_coefs[k++];
+                
+                fprintf(stdout, "Done.\n");
+            }   
+        }
+        else if(choice == 1){
+            FILE* coef_file = open_file_dialog();
+            if(coef_file == NULL){
+                printf("Error: Couldn't open coefficients' file\n");
+                continue;
+            }
+
+            int overflow; 
+            int coefs_read = read_coefs(coef_file, upsamp_coefs, fir.conf->coefs_upsamp_nr, &overflow); 
+            fclose(coef_file);       
+            if(coefs_read < 0){
+                fprintf(stderr, "Error: Failed reading coefficients.\n");
+                continue;
+            }
+            fprintf(stdout, "Read %d coefficients.\n", coefs_read);
+            if(overflow == 1)
+                fprintf(stderr, "Warning: Not all coefficients have been read.\n");
+            if(coefs_read != fir.conf->coefs_upsamp_nr){
+                fprintf(stderr, "Error: Number of coefs %d doesn't match expected number of coefs %d.\n", coefs_read, fir.conf->coefs_upsamp_nr);
+            }
+            else{
+                fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
+                int k = 0; int tm = fir.conf->tm; int upsamp_dsp_nr = fir.conf->upsamp_dsp_nr;
+                for(int j = 0; j < upsamp_dsp_nr; ++j)
+                    for(int i = 0; i < tm; ++i)
+                        fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = upsamp_coefs[k++];
                 
                 fprintf(stdout, "Done.\n");
             }   
@@ -184,12 +184,16 @@ Change internal constant FIR_MAX_SRC_COEFS.\n",
                 fir.coefs[i] = 0;
         }
         else if(choice == 7){
+            int source_nr;
             int debug_source;
-            fprintf(stdout, "Choose debug source: ");
-            if(scanf("%d", &debug_source) == 1)
-                fir.conf->debug_source = debug_source;
-            else
-                fprintf(stdout, "Debug source must be an integer\n");
+            fprintf(stdout, "Choose debug slot: ");
+            if(scanf("%d", &source_nr) == 1){
+                fprintf(stdout, "Choose debug source: ");
+                if(scanf("%d", &debug_source) == 1)
+                    fir.conf->debug_source[source_nr] = debug_source;
+                else
+                    fprintf(stdout, "Debug source must be an integer\n");
+            }
         }
         else if(choice == 8){
             SWITCH_ON(SWITCH_FIR_SNAP, fir.conf->switches);
