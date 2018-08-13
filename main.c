@@ -74,7 +74,10 @@ Change internal constant FIR_MAX_SRC_COEFS.\n",
 6. Clear filter\n\
 7. Choose snap source\n\
 8. Enable snap record\n\
-9. Block ram snapshot\n");
+9. Block ram snapshot\n\
+10. Enable TM ratio\n\
+11. Disable TM ratio\n");
+
         if(scanf("%d", &choice) < 1){
             cont = 0;
             continue;
@@ -227,6 +230,11 @@ Change internal constant FIR_MAX_SRC_COEFS.\n",
                 }
             }
             fclose(snaps_file);
+        }
+        else if(choice == 10){
+            SWITCH_ON(SWITCH_DEB_TM_RATIO, fir.conf->switches);
+        }else if(choice == 11){
+            SWITCH_OFF(SWITCH_DEB_TM_RATIO, fir.conf->switches);
         }
         // else if(choice == 7){
         //     printf("SIGNAL\n-----------------\n");
