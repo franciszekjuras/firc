@@ -11,7 +11,6 @@ struct fir_s; typedef struct fir_s fir_t;
 #define SWITCH_FIR_EN 1
 #define SWITCH_FIR_UPDATE 2
 #define SWITCH_FIR_SNAP 5
-#define SWITCH_DEB_TM_RATIO 6
 
 //offsets in fpga 32-bit addressing
 #define BASE_SHIFT 7
@@ -23,7 +22,7 @@ struct fir_s; typedef struct fir_s fir_t;
 #define FIR_SAMPLES_NR 10
 #define FIR_SAMPLES_DEPTH 5
 #define FIR_BLOCK_SAMPLES_NR 1024
-#define FIR_DEBUG_BLOCKS_NR 15
+#define FIR_DEBUG_BLOCKS_NR 20
 
 #define FIR_MAX_COEFS 10000
 #define FIR_MAX_SRC_COEFS 3000
@@ -35,17 +34,17 @@ struct fir_conf_s{
 /*0:2*/	char 	info [12];
 /*3*/	int32_t unused3;
 		
-/*4*/	int32_t coefs_max_nr;
+/*4*/	int32_t coefs_max_nr; 
 /*5*/	int32_t coefs_upsamp_nr;
 /*6*/	int32_t coefs_dwsamp_nr;
 /*7*/	int32_t unused7;
 
-/*8*/	int32_t tm;
+/*8*/	int32_t tm; // rząd multipleksowania
 /*9*/	int32_t fir_dsp_nr;
 /*10*/	int32_t upsamp_dsp_nr;
 /*11*/	int32_t dwsamp_dsp_nr;
 
-/*12*/	int32_t fir_coef_mag;
+/*12*/	int32_t fir_coef_mag; // przecinek
 /*13*/	int32_t src_coef_mag;
 /*14*/	int32_t unused14;
 /*15*/	int32_t unused15;
@@ -55,8 +54,8 @@ struct fir_conf_s{
 /*18*/	int32_t dwsamp_coefs_base;
 /*19*/	int32_t unused19;
 		//read|write
-/*20*/	uint32_t switches;
-/*21*/	int32_t coefs_crr_nr;
+/*20*/	uint32_t switches; // co to jest?
+/*21*/	int32_t coefs_crr_nr; // co to jest? 
 /*22*/	int32_t unused22;
 /*23*/	int32_t unused23;
 
@@ -74,6 +73,7 @@ struct fir_s{
 
 fir_t open_fir(const fpga_t* fpga);
 int close_fir(fir_t* fir);
+void load_coefs(fir_t fir, int32_t* coefs, int32_t dsp_nr);
 
 
 #endif //_fir_h_

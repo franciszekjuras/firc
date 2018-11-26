@@ -12,245 +12,163 @@
 
 #include "firctrl.h"
 
-int main(void){
-    //general variables:
-    int32_t coefs[FIR_MAX_COEFS];
-    int32_t upsamp_coefs[FIR_MAX_SRC_COEFS];
-    int32_t dwsamp_coefs[FIR_MAX_SRC_COEFS];
-    int32_t* fir_coefs;
-    fir_t fir;
-    fpga_t fpga;
+int main(int argc, char ** argv){
 
-    //mapping fpga memory:
-    fpga= fpga_connect(FPGA_BASE_ADDR ,FPGA_MEM_SIZE);
-    if(!fpga.valid){
-        fprintf(stderr, "Couldn't establish connection with FPGA.\n"); return -1;
-    }
-    fir = open_fir(&fpga);
+	int32_t coefs[FIR_MAX_COEFS];
+	int32_t upsamp_coefs[FIR_MAX_SRC_COEFS];
+	int32_t dwsamp_coefs[FIR_MAX_SRC_COEFS];
 
-    display_info(&fir);
+	fpga_t fpga;
+	fir_t fir;
 
-    int choice; int cont = 1;
+	fpga = fpga_connect( FPGA_BASE_ADDR, FPGA_MEM_SIZE );
+			if( !fpga.valid ) {
+				fprintf(stderr, "Error: Couldn't establish connection with FPGA.\n");
+				return -1;
+			}
+			fir = open_fir(&fpga); 
 
-    if(FIR_MAX_COEFS < fir.conf->coefs_max_nr){
-        fprintf(stderr, 
-            "Only %d coefficients can be read,\
-while FIR filter can take %d.\n\
-Change internal constant FIR_MAX_COEFS.\n",
-            FIR_MAX_COEFS, fir.conf->coefs_max_nr);
-        close_fir(&fir); fpga_disconnect(&fpga);
-        return -1;
-    }
+	for(int i=1; i < argc; i++) {
 
-    if(FIR_MAX_SRC_COEFS < fir.conf->coefs_upsamp_nr){
-        fprintf(stderr, 
-            "Only %d coefficients can be read,\
-while upsampling filter can take %d.\n\
-Change internal constant FIR_MAX_SRC_COEFS.\n",
-            FIR_MAX_SRC_COEFS, fir.conf->coefs_upsamp_nr);
-        close_fir(&fir); fpga_disconnect(&fpga);
-        return -1;
-    }
+		if(strcmp(argv[i],"-p") == 0) { // docelowo - wpisać konfigurację do pliku
+			continue;
+		} // -p
 
-    if(FIR_MAX_SRC_COEFS < fir.conf->coefs_dwsamp_nr){
-        fprintf(stderr, 
-            "Only %d coefficients can be read,\
-while downsampling filter can take %d.\n\
-Change internal constant FIR_MAX_SRC_COEFS.\n",
-            FIR_MAX_SRC_COEFS, fir.conf->coefs_upsamp_nr);
-        close_fir(&fir); fpga_disconnect(&fpga);
-        return -1;
-    }
+		if(strcmp(argv[i],"-t") == 0) { // zwraca rząd multipleksowania w czasie
+			printf("%d\n", fir.conf->tm);
+			continue;
+		} // -t
 
-    while(cont){
-        //TODO: add some tests for fpga connection
-        printf("Do you want to:\n\
-0. Update downsampling coefficients\n\
-1. Update upsampling coefficients\n\
-2. Update FIR coefficients\n\
-3. Enable filter\n\
-4. Disable filter\n\
-5. Display info\n\
-6. Clear filter\n\
-7. Choose snap source\n\
-8. Enable snap record\n\
-9. Block ram snapshot\n\
-10. Enable TM ratio\n\
-11. Disable TM ratio\n");
+		if(strcmp(argv[i],"-l") == 0) { // ładowanie współczynników
+			FILE* up_coefs_file = open_file_dialog("tmp/firctrl/up.dat");
+			FILE* dw_coefs_file = open_file_dialog("tmp/firctrl/dw.dat");
+			FILE* fir_coefs_file = open_file_dialog("tmp/firctrl/cf.dat");
+			if(up_coefs_file == NULL || dw_coefs_file == NULL || fir_coefs_file == NULL)
+				return -1;
 
-        if(scanf("%d", &choice) < 1){
-            cont = 0;
-            continue;
-        }
+			int up_overflow;  // nie rozumiem do czego to jest
+			int dw_overflow;
+			int fir_overflow;
 
-        if(choice == 0){
-            FILE* coef_file = open_file_dialog();
-            if(coef_file == NULL){
-                printf("Error: Couldn't open coefficients' file\n");
-                continue;
-            }
+			// wczytanie up_coefs
+            int up_coefs_read = read_coefs(up_coefs_file, upsamp_coefs, fir.conf->coefs_upsamp_nr, &up_overflow); 
+            fclose(up_coefs_file);    
+        	// ewentualne błędy:   
+            if(up_coefs_read < 0) {
+                fprintf(stderr, "Error: Failed reading upsampling coefficients (even though the file was succesfully opened). \n");
+                return -1;
+            } // if
+            if(up_overflow == 1) {
+            	fprintf(stderr, "Error: Number of upsampling coefficients is larger than expectd.\n");
+  				return -1;
+            } // if
+            if(up_coefs_read != fir.conf->coefs_upsamp_nr){ 
+                fprintf(stderr, "Error: Number of upsampling coefficients doesn't match expected number.\n");
+                return -1;
+            } // if
+            //wgranie współczynników
+            load_coefs(fir, upsamp_coefs, fir.conf->upsamp_dsp_nr);
 
-            int overflow; 
-            int coefs_read = read_coefs(coef_file, dwsamp_coefs, fir.conf->coefs_dwsamp_nr, &overflow); 
-            fclose(coef_file);       
+        	// wczytanie dw_coefs
+            int dw_coefs_read = read_coefs(dw_coefs_file, dwsamp_coefs, fir.conf->coefs_dwsamp_nr, &dw_overflow); 
+            fclose(dw_coefs_file);  
+        	// ewentualne błędy:     
+            if(dw_coefs_read < 0){
+                fprintf(stderr, "Error: Failed reading downsampling coefficients.\n");
+                return -1;
+            } // if
+            if(dw_overflow == 1) {
+            	fprintf(stderr, "Error: Number of downsampling coefficients is larger than expetced.\n");
+  				return -1;
+            } // if
+            if(dw_coefs_read != fir.conf->coefs_dwsamp_nr){ 
+                fprintf(stderr, "Error: Number of downsampling coefficients doesn't match expected number.\n");
+                return -1;
+            } // if
+            //wgranie współczynników
+            load_coefs(fir, dwsamp_coefs, fir.conf->dwsamp_dsp_nr);
+
+        	// wczytanie fir_coefs
+            int coefs_read = read_coefs(fir_coefs_file, coefs, fir.conf->coefs_max_nr, &fir_overflow); 
+            fclose(fir_coefs_file);  
+        	// ewentualne błędy:     
             if(coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading coefficients.\n");
-                continue;
-            }
-            fprintf(stdout, "Read %d coefficients.\n", coefs_read);
-            if(overflow == 1)
-                fprintf(stderr, "Warning: Not all coefficients have been read.\n");
-            if(coefs_read != fir.conf->coefs_dwsamp_nr){
-                fprintf(stderr, "Error: Number of coefs %d doesn't match expected number of coefs %d.\n", coefs_read, fir.conf->coefs_upsamp_nr);
-            }
-            else{
-                fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
-                int k = 0; int tm = fir.conf->tm; int dwsamp_dsp_nr = fir.conf->dwsamp_dsp_nr;
-                for(int j = 0; j < dwsamp_dsp_nr; ++j)
-                    for(int i = tm-1; i >= 0; --i)
-                        fir.dwsamp_coefs[(j<<BASE_SHIFT)+i] = dwsamp_coefs[k++];
-                
-                fprintf(stdout, "Done.\n");
-            }   
-        }
-        else if(choice == 1){
-            FILE* coef_file = open_file_dialog();
-            if(coef_file == NULL){
-                printf("Error: Couldn't open coefficients' file\n");
-                continue;
-            }
+                fprintf(stderr, "Error: Failed reading FIR coefficients.\n");
+            	return -1;
+            } // if
+            if(fir_overflow == 1) {
+            	fprintf(stderr, "Error: Number of fir coefficients is larger than expected.\n");
+  				return -1;
+            } // if
+            if(coefs_read != fir.conf->coefs_max_nr){ 
+                fprintf(stderr, "Error: Number of fir coefficients doesn't match expected number.\n");
+                return -1;
+            } // if
+            //wgranie współczynników 
+            load_coefs(fir, coefs, fir.conf->fir_dsp_nr);
+            fir.conf->coefs_crr_nr = coefs_read; // nie wiem do czego to służy...
 
-            int overflow; 
-            int coefs_read = read_coefs(coef_file, upsamp_coefs, fir.conf->coefs_upsamp_nr, &overflow); 
-            fclose(coef_file);       
-            if(coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading coefficients.\n");
-                continue;
-            }
-            fprintf(stdout, "Read %d coefficients.\n", coefs_read);
-            if(overflow == 1)
-                fprintf(stderr, "Warning: Not all coefficients have been read.\n");
-            if(coefs_read != fir.conf->coefs_upsamp_nr){
-                fprintf(stderr, "Error: Number of coefs %d doesn't match expected number of coefs %d.\n", coefs_read, fir.conf->coefs_upsamp_nr);
-            }
-            else{
-                fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
-                int k = 0; int tm = fir.conf->tm; int upsamp_dsp_nr = fir.conf->upsamp_dsp_nr;
-                for(int j = 0; j < upsamp_dsp_nr; ++j)
-                    for(int i = 0; i < tm; ++i)
-                        fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = upsamp_coefs[k++];
-                
-                fprintf(stdout, "Done.\n");
-            }   
-        }
-        else if(choice == 2){
-            FILE* coef_file = open_file_dialog();
-            if(coef_file == NULL){
-                printf("Error: Couldn't open coefficients' file\n");
-                continue;
-            }
+		} // -l
 
-            int overflow; 
-            int coefs_read = read_coefs(coef_file, coefs, fir.conf->coefs_max_nr, &overflow); 
-            fclose(coef_file);       
-            if(coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading coefficients.\n");
-                continue;
-            }
-            fprintf(stdout, "Read %d coefficients.\n", coefs_read);
-            if(overflow == 1)
-                fprintf(stderr, "Warning: Not all coefficients have been read.\n");
-            
-            fprintf(stdout, "Writing %d coefs to FPGA... ", coefs_read);
-            int k = 0; int tm = fir.conf->tm; int fir_dsp_nr = fir.conf->fir_dsp_nr;
-            for(int i = 0; i < tm; ++i)
-                for(int j = 0; j < fir_dsp_nr; ++j)
-                    fir.coefs[(j<<BASE_SHIFT)+i] = coefs[k++];
-            fir.conf->coefs_crr_nr = coefs_read;
-            fprintf(stdout, "Done.\n");
-        }
+		if(strcmp(argv[i],"-c") == 0) { // wypisanie maksymalnej liczby współczynników
+			printf("%d\n", fir.conf->coefs_dwsamp_nr); 
+			printf("%d\n", fir.conf->coefs_upsamp_nr);
+			continue;
+		} // -c
 
-        else if(choice == 3){ //merge into switch en/dis
-            SWITCH_ON(SWITCH_FIR_EN, fir.conf->switches);
-            fprintf(stdout, "FIR enabled.\n");
-        }
+		if(strcmp(argv[i],"-r") == 0) { // wypisanie maksymalnej liczby współczynników FIR
+			printf("%d\n",fir.conf->coefs_max_nr);
+			continue;
+		} // -r
 
-        else if(choice == 4){
-            SWITCH_OFF(SWITCH_FIR_EN, fir.conf->switches);
-            fprintf(stdout, "FIR disabled.\n");
-        }
-        else if(choice == 5){
-            display_info(&fir);
-        }
-        else if(choice == 6){ //clear filter
-            for(int i = 0; i < fir.conf->coefs_max_nr; i++)
-                fir.coefs[i] = 0;
-        }
-        else if(choice == 7){
-            int source_nr;
-            int debug_source;
-            fprintf(stdout, "Choose debug slot: ");
-            if(scanf("%d", &source_nr) == 1){
-                fprintf(stdout, "Choose debug source: ");
-                if(scanf("%d", &debug_source) == 1)
-                    fir.conf->debug_source[source_nr] = debug_source;
-                else
-                    fprintf(stdout, "Debug source must be an integer\n");
-            }
-        }
-        else if(choice == 8){
-            SWITCH_ON(SWITCH_FIR_SNAP, fir.conf->switches);
-        }
-        // else if(choice == 8){
-        //     SWITCH_OFF(SWITCH_FIR_SNAP, fir.conf->switches);
-        //     FILE* snaps_file = fopen("snaps.dat","w");
-        //     if(snaps_file == NULL){
-        //         printf("Couldn't open file snaps.dat for writing.\n");
-        //         continue;
-        //     }
-        //     for(int i = 0; i < FIR_SAMPLES_NR; ++i){
-        //         for(int j = 0; j < FIR_SAMPLES_DEPTH; ++j){
-        //             fprintf(snaps_file, "%d\t", fir.samples[(i*FIR_SAMPLES_DEPTH)+j]);
-        //         }
-        //         fprintf(snaps_file, "\n");
-        //     }
-        //     fclose(snaps_file);
-        // }
-        else if(choice == 9){
-            SWITCH_OFF(SWITCH_FIR_SNAP, fir.conf->switches);
-            FILE* snaps_file = fopen("snaps.dat","w");
-            if(snaps_file == NULL){
-                printf("Couldn't open file snaps.dat for writing.\n");
-                continue;
-            }
-            for(int i = 0; i < FIR_DEBUG_BLOCKS_NR; ++i){
-                fir.conf->crr_debug_block = i;
-                for(int j = 0; j < FIR_BLOCK_SAMPLES_NR; ++j){
-                    fprintf(snaps_file, "%d\n", fir.samples[j]);
-                }
-            }
-            fclose(snaps_file);
-        }
-        else if(choice == 10){
-            SWITCH_ON(SWITCH_DEB_TM_RATIO, fir.conf->switches);
-        }else if(choice == 11){
-            SWITCH_OFF(SWITCH_DEB_TM_RATIO, fir.conf->switches);
-        }
-        // else if(choice == 7){
-        //     printf("SIGNAL\n-----------------\n");
-        //     SWITCH_ON(SWITCH_FIR_TRIGGER, fir.conf->switches);
-        //     SWITCH_OFF(SWITCH_FIR_TRIGGER, fir.conf->switches);
-        //     for(int i = 0; i < fir.conf->coefs_max_nr; i++){
-        //         fprintf(data_file,"%f\n",((double)fir.samples[i])/(1<<13));
-        //     }
-        //     fprintf(data_file, "0\n0.02\n0.04\n0.06\n0.04\n0.02\n0\n-0.02\n-0.04\n-0.06\n-0.04\n-0.02\n0\n");
-        // }
-        else
-            cont = 0;
+		if(strcmp(argv[i],"-m") == 0) { // zwraca pozycję przecinka; nie wiem która to zmienna 
+			printf("%d\n", fir.conf->fir_coef_mag);
+			continue;
+		} // -m
 
-    }
-    close_fir(&fir);
-    fpga_disconnect(&fpga);
+		if(strcmp(argv[i],"-o") == 0) { // włącza filtr
+			SWITCH_ON(SWITCH_FIR_EN, fir.conf->switches);
+		} // -o
 
-    return 0;
+		if(strcmp(argv[i],"-x") == 0) { // wyłącza filtr
+			SWITCH_OFF(SWITCH_FIR_EN, fir.conf->switches);
+		} // -x
+
+		if(strcmp(argv[i],"-z") == 0) { // zeruje wszystkie współczynniki
+			zero_coefs(upsamp_coefs, fir.conf->coefs_upsamp_nr);
+			load_coefs(fir, upsamp_coefs, fir.conf->upsamp_dsp_nr);
+
+			zero_coefs(dwsamp_coefs, fir.conf->coefs_dwsamp_nr);
+			load_coefs(fir, dwsamp_coefs, fir.conf->dwsamp_dsp_nr);
+
+			zero_coefs(coefs, fir.conf->coefs_max_nr);
+			load_coefs(fir, coefs, fir.conf->fir_dsp_nr);
+		} // -z
+
+		if(strcmp(argv[i],"-i") == 0 || strcmp(argv[i],"help") == 0 || strcmp(argv[i],"-h") == 0 || strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0) {
+			printf( "FIRCTRL \n"
+				"\n"
+				"Usage: ./firctrl [arguments]\n"
+				"\n"
+				"Arguments:\n"
+				"  -p: 	Check beatstreamem consistency\n"
+				"  -t: 	Show time multiplexing rank\n"
+				"  -l: 	Load coefficients\n"
+				"  -c: 	Show maximum number of downsampling and upsampling coefficients\n"
+				"  -r: 	Show maximum number of FIR coefficients\n"
+				"  -m: 	Show comma position\n"
+				"  -o:	Enable filter\n"
+				"  -x: 	Disable filter\n"
+				"  -z: 	Set all coefficients to 0\n"
+				"  -i: 	Show info\n"
+				"\n"
+				); // printf
+			continue;
+		} // info
+
+	} // for i
+
+	close_fir(&fir);
+	fpga_disconnect(&fpga);
+	return 0;
 }

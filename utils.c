@@ -1,11 +1,13 @@
 #include "utils.h"
 
-FILE* open_file_dialog(){
+FILE* open_file_dialog(char* file_name){
     FILE* file = NULL;
-    char file_name[512];
-    printf("Insert path to file: ");
-    if(scanf("%s", file_name) == 1) 
+    //char file_name[512];
+    //printf("Insert path to file: ");
+    //if(scanf("%s", file_name) == 1) 
         file = fopen(file_name, "r");
+        if(file == NULL)
+        	fprintf(stderr, "Error: Couldn't open file: %s\n", file_name);
     return file;
 }
 
@@ -18,8 +20,8 @@ FILE* open_file_dialog(){
 //     else return choice;
 // }
 
-
-int read_coefs(FILE* file, int32_t* coefs, int max, int* overflow){
+ // read_coefs chyba zwraca liczbę wgranych współczynników
+int read_coefs(FILE* file, int32_t* coefs, int max, int* overflow){ // nie rozumiem do czego złuży overflow
     int i = 0;
     int cread = 0;
     int coef_temp;
@@ -37,8 +39,14 @@ int read_coefs(FILE* file, int32_t* coefs, int max, int* overflow){
     else
         if(overflow != NULL)*overflow = 0;
 
-    return cread;
+    return cread; 
 }
+
+// zerowanie współczynników
+void zero_coefs(int32_t* coefs, int max) {
+	for(int i=0; i < max; i++)
+		coefs[i] = 0;
+} // zero_coefs
 
 void display_info(fir_t* fir){
     printf("---------====< %s >====---------\n", fir->conf->info);

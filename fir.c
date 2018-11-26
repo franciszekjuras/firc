@@ -18,3 +18,10 @@ int close_fir(fir_t* fir){
     fir->conf = NULL; fir->coefs = NULL;
     return 0;
 }
+
+void load_coefs(fir_t fir, int32_t* coefs, int32_t dsp_nr) {
+	int k = 0; int tm = fir.conf->tm;
+            for(int i = 0; i < tm; ++i)
+                for(int j = 0; j < dsp_nr; ++j)  
+                    fir.coefs[(j<<BASE_SHIFT)+i] = coefs[k++];
+} // coefs_load
