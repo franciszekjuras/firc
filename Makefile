@@ -5,8 +5,7 @@ CFLAGS=-I$(IDIR) -std=c11
 ODIR=obj
 #LDIR =../lib
 
-#LIBS=-lm
-LIBS=
+LIBS=-lm
 
 _DEPS = firctrl.h utils.h fir.h fpga.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

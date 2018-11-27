@@ -5,6 +5,7 @@ struct fir_conf_s; typedef struct fir_conf_s fir_conf_t;
 struct fir_s; typedef struct fir_s fir_t;
 
 #include "firctrl.h"
+#include "utils.h"
 #include "fpga.h"
 
 #define SWITCH_CON_EST 0
@@ -54,8 +55,8 @@ struct fir_conf_s{
 /*18*/	int32_t dwsamp_coefs_base;
 /*19*/	int32_t unused19;
 		//read|write
-/*20*/	uint32_t switches; // co to jest?
-/*21*/	int32_t coefs_crr_nr; // co to jest? 
+/*20*/	uint32_t switches; // zmienna zawierajaca bity kontrolne
+/*21*/	int32_t coefs_crr_nr; // do wywalenia 
 /*22*/	int32_t unused22;
 /*23*/	int32_t unused23;
 
@@ -73,7 +74,14 @@ struct fir_s{
 
 fir_t open_fir(const fpga_t* fpga);
 int close_fir(fir_t* fir);
-void load_coefs(fir_t fir, int32_t* coefs, int32_t dsp_nr);
+
+coef_t* open_coefs(const char* src, int coefs_nr);
+
+int zero_coefs(fir_t fir);
+
+int load_coefs_dw(fir_t fir, coef_t* coefs);
+int load_coefs_up(fir_t fir, coef_t* coefs);
+int load_coefs_fir(fir_t fir, coef_t* coefs);
 
 
 #endif //_fir_h_

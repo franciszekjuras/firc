@@ -1,28 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdint.h>
-
 #include "firctrl.h"
 
 int main(int argc, char ** argv){
-
-	int32_t coefs[FIR_MAX_COEFS];
-	int32_t upsamp_coefs[FIR_MAX_SRC_COEFS];
-	int32_t dwsamp_coefs[FIR_MAX_SRC_COEFS];
 
 	fpga_t fpga;
 	fir_t fir;
 
 	fpga = fpga_connect( FPGA_BASE_ADDR, FPGA_MEM_SIZE );
 			if( !fpga.valid ) {
+				if(strcmp(argv[1],"-s") == 0)
+					printf("FPGA_NO_CONNECTION\n");
 				fprintf(stderr, "Error: Couldn't establish connection with FPGA.\n");
 				return -1;
 			}
@@ -30,101 +16,76 @@ int main(int argc, char ** argv){
 
 	for(int i=1; i < argc; i++) {
 
-		if(strcmp(argv[i],"-p") == 0) { // docelowo - wpisać konfigurację do pliku
+		if(strcmp(argv[i],"-s") == 0) { //Sprawdzić, czy jest poprawny bitstream
+			if(strncmp(fir.conf->info, "FIR", 3) != 0){
+				printf("FPGA_BAD_BITSTREAM\n");
+				return -1;
+			}
+			printf("FPGA_OK\n");
 			continue;
 		} // -p
 
-		if(strcmp(argv[i],"-t") == 0) { // zwraca rząd multipleksowania w czasie
+		if(strcmp(argv[i],"-t") == 0 || strcmp(argv[i],"--tm") == 0) { // zwraca rząd multipleksowania w czasie
 			printf("%d\n", fir.conf->tm);
 			continue;
 		} // -t
 
-		if(strcmp(argv[i],"-l") == 0) { // ładowanie współczynników
-			FILE* up_coefs_file = open_file_dialog("tmp/firctrl/up.dat");
-			FILE* dw_coefs_file = open_file_dialog("tmp/firctrl/dw.dat");
-			FILE* fir_coefs_file = open_file_dialog("tmp/firctrl/cf.dat");
-			if(up_coefs_file == NULL || dw_coefs_file == NULL || fir_coefs_file == NULL)
+		if(strcmp(argv[i], "--coef-sizeof") == 0) {
+			printf("%ld\n", sizeof(coef_t));
+		}
+
+		if(strcmp(argv[i],"-l") == 0 || strcmp(argv[i],"--load") == 0) { // ładowanie współczynników
+			coef_t* dw_coefs = open_coefs("/tmp/firctrl/dw.dat", fir.conf->coefs_dwsamp_nr);
+			coef_t* up_coefs= open_coefs("/tmp/firctrl/up.dat", fir.conf->coefs_upsamp_nr);
+			coef_t* fir_coefs = open_coefs("/tmp/firctrl/cf.dat", fir.conf->coefs_max_nr);
+			if(up_coefs == NULL || dw_coefs == NULL || fir_coefs == NULL){
+				fprintf(stderr, "Error reading coefficients.\n");
+				free(up_coefs); free(dw_coefs); free(fir_coefs);
 				return -1;
+			}
+			int load_stat = 0; 
+			load_stat += load_coefs_dw(fir, dw_coefs);
+			load_stat += load_coefs_up(fir, up_coefs);
+			load_stat += load_coefs_fir(fir, fir_coefs);
 
-			int up_overflow;  // nie rozumiem do czego to jest
-			int dw_overflow;
-			int fir_overflow;
-
-			// wczytanie up_coefs
-            int up_coefs_read = read_coefs(up_coefs_file, upsamp_coefs, fir.conf->coefs_upsamp_nr, &up_overflow); 
-            fclose(up_coefs_file);    
-        	// ewentualne błędy:   
-            if(up_coefs_read < 0) {
-                fprintf(stderr, "Error: Failed reading upsampling coefficients (even though the file was succesfully opened). \n");
-                return -1;
-            } // if
-            if(up_overflow == 1) {
-            	fprintf(stderr, "Error: Number of upsampling coefficients is larger than expectd.\n");
-  				return -1;
-            } // if
-            if(up_coefs_read != fir.conf->coefs_upsamp_nr){ 
-                fprintf(stderr, "Error: Number of upsampling coefficients doesn't match expected number.\n");
-                return -1;
-            } // if
-            //wgranie współczynników
-            load_coefs(fir, upsamp_coefs, fir.conf->upsamp_dsp_nr);
-
-        	// wczytanie dw_coefs
-            int dw_coefs_read = read_coefs(dw_coefs_file, dwsamp_coefs, fir.conf->coefs_dwsamp_nr, &dw_overflow); 
-            fclose(dw_coefs_file);  
-        	// ewentualne błędy:     
-            if(dw_coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading downsampling coefficients.\n");
-                return -1;
-            } // if
-            if(dw_overflow == 1) {
-            	fprintf(stderr, "Error: Number of downsampling coefficients is larger than expetced.\n");
-  				return -1;
-            } // if
-            if(dw_coefs_read != fir.conf->coefs_dwsamp_nr){ 
-                fprintf(stderr, "Error: Number of downsampling coefficients doesn't match expected number.\n");
-                return -1;
-            } // if
-            //wgranie współczynników
-            load_coefs(fir, dwsamp_coefs, fir.conf->dwsamp_dsp_nr);
-
-        	// wczytanie fir_coefs
-            int coefs_read = read_coefs(fir_coefs_file, coefs, fir.conf->coefs_max_nr, &fir_overflow); 
-            fclose(fir_coefs_file);  
-        	// ewentualne błędy:     
-            if(coefs_read < 0){
-                fprintf(stderr, "Error: Failed reading FIR coefficients.\n");
-            	return -1;
-            } // if
-            if(fir_overflow == 1) {
-            	fprintf(stderr, "Error: Number of fir coefficients is larger than expected.\n");
-  				return -1;
-            } // if
-            if(coefs_read != fir.conf->coefs_max_nr){ 
-                fprintf(stderr, "Error: Number of fir coefficients doesn't match expected number.\n");
-                return -1;
-            } // if
-            //wgranie współczynników 
-            load_coefs(fir, coefs, fir.conf->fir_dsp_nr);
-            fir.conf->coefs_crr_nr = coefs_read; // nie wiem do czego to służy...
+			free(up_coefs); free(dw_coefs); free(fir_coefs);
+			if(load_stat != 0){
+				fprintf(stderr, "Error loading coefficients.\n");
+				return -1;
+			}
+			continue;
 
 		} // -l
 
-		if(strcmp(argv[i],"-c") == 0) { // wypisanie maksymalnej liczby współczynników
+		if(strcmp(argv[i],"--ndw") == 0) { // wypisanie maksymalnej liczby współczynników
 			printf("%d\n", fir.conf->coefs_dwsamp_nr); 
-			printf("%d\n", fir.conf->coefs_upsamp_nr);
 			continue;
 		} // -c
 
-		if(strcmp(argv[i],"-r") == 0) { // wypisanie maksymalnej liczby współczynników FIR
+		if(strcmp(argv[i],"--nup") == 0) { // wypisanie maksymalnej liczby współczynników
+			printf("%d\n", fir.conf->coefs_upsamp_nr); 
+			continue;
+		} // -c
+
+		if(strcmp(argv[i],"--ncf") == 0 || strcmp(argv[i],"-n") == 0) { // wypisanie maksymalnej liczby współczynników
 			printf("%d\n",fir.conf->coefs_max_nr);
 			continue;
-		} // -r
+		} // -c
 
-		if(strcmp(argv[i],"-m") == 0) { // zwraca pozycję przecinka; nie wiem która to zmienna 
-			printf("%d\n", fir.conf->fir_coef_mag);
+		if(strcmp(argv[i],"--pdw") == 0) { // wypisanie maksymalnej liczby współczynników
+			printf("%d\n", fir.conf->src_coef_mag); 
 			continue;
-		} // -m
+		} // -c
+
+		if(strcmp(argv[i],"--pup") == 0) { // wypisanie maksymalnej liczby współczynników
+			printf("%d\n", fir.conf->src_coef_mag); 
+			continue;
+		} // -c
+
+		if(strcmp(argv[i],"--pcf") == 0 || strcmp(argv[i],"-p") == 0) { // wypisanie maksymalnej liczby współczynników
+			printf("%d\n",fir.conf->fir_coef_mag);
+			continue;
+		} // -c
 
 		if(strcmp(argv[i],"-o") == 0) { // włącza filtr
 			SWITCH_ON(SWITCH_FIR_EN, fir.conf->switches);
@@ -135,23 +96,16 @@ int main(int argc, char ** argv){
 		} // -x
 
 		if(strcmp(argv[i],"-z") == 0) { // zeruje wszystkie współczynniki
-			zero_coefs(upsamp_coefs, fir.conf->coefs_upsamp_nr);
-			load_coefs(fir, upsamp_coefs, fir.conf->upsamp_dsp_nr);
-
-			zero_coefs(dwsamp_coefs, fir.conf->coefs_dwsamp_nr);
-			load_coefs(fir, dwsamp_coefs, fir.conf->dwsamp_dsp_nr);
-
-			zero_coefs(coefs, fir.conf->coefs_max_nr);
-			load_coefs(fir, coefs, fir.conf->fir_dsp_nr);
+			zero_coefs(fir);
 		} // -z
 
-		if(strcmp(argv[i],"-i") == 0 || strcmp(argv[i],"help") == 0 || strcmp(argv[i],"-h") == 0 || strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0) {
+		if(strcmp(argv[i],"help") == 0 || strcmp(argv[i],"-h") == 0 || strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0) {
 			printf( "FIRCTRL \n"
 				"\n"
-				"Usage: ./firctrl [arguments]\n"
+				"Usage: firctrl [arguments]\n"
 				"\n"
 				"Arguments:\n"
-				"  -p: 	Check beatstreamem consistency\n"
+				"  -p: 	Check bitstreamem consistency\n"
 				"  -t: 	Show time multiplexing rank\n"
 				"  -l: 	Load coefficients\n"
 				"  -c: 	Show maximum number of downsampling and upsampling coefficients\n"
@@ -165,6 +119,9 @@ int main(int argc, char ** argv){
 				); // printf
 			continue;
 		} // info
+		if(strcmp(argv[i],"-i") == 0 || strcmp(argv[i],"--info") == 0){
+			printf("Info\n");
+		}
 
 	} // for i
 

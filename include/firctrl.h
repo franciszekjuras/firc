@@ -15,6 +15,8 @@
 
 #undef _DEBUG_ 
 
+typedef double coef_t;
+
 
 #include "utils.h"
 #include "fir.h"
