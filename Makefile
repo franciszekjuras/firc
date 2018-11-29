@@ -20,7 +20,10 @@ $(ODIR)/%.o: %.c $(DEPS)
 firctrl: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-.PHONY: clean
+.PHONY: clean install
+
+install:
+	cp firctrl /usr/local/bin/
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~ firctrl

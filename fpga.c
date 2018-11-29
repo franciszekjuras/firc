@@ -5,9 +5,7 @@ fpga_t fpga_connect(long base, long mem_size){
     //mapping fpga memory
     fpga.fd = open("/dev/mem", O_RDWR | O_SYNC);
     if(fpga.fd < 0) {
-        #ifdef _DEBUG_
         fprintf(stderr, "open(/dev/mem) failed: %s\n", strerror(errno));
-        #endif
         fpga.valid = 0;
         return fpga;
     }
@@ -18,10 +16,9 @@ fpga_t fpga_connect(long base, long mem_size){
     void* page_ptr = mmap(NULL, map_length, PROT_READ | PROT_WRITE,
                           MAP_SHARED, fpga.fd, page_addr);
     //break if mapping failed
-    if((void *)page_ptr == MAP_FAILED) {
-        #ifdef _DEBUG_
+    //fprintf(stderr, "Pointer: %p\n", page_ptr);
+    if(page_ptr == MAP_FAILED) {
         fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
-        #endif
         fpga.valid = 0;
         return fpga;
     }
@@ -38,9 +35,7 @@ fpga_t fpga_connect(long base, long mem_size){
 int fpga_disconnect(fpga_t* fpga){
     
     if (munmap(fpga->addr, fpga->mem_size) < 0) {
-        #ifdef _DEBUG_
         fprintf(stderr, "munmap() failed: %s\n", strerror(errno));
-        #endif
         return -1;
     }
     

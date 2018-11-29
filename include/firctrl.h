@@ -16,7 +16,7 @@
 #undef _DEBUG_ 
 
 typedef double coef_t;
-
+#define FIR_VER "FIR 3.1"
 
 #include "utils.h"
 #include "fir.h"

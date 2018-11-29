@@ -2,36 +2,38 @@
 
 int main(int argc, char ** argv){
 
-	fpga_t fpga;
-	fir_t fir;
+	int print_status = (argc > 1 && strcmp(argv[1],"-s") == 0);
 
-	fpga = fpga_connect( FPGA_BASE_ADDR, FPGA_MEM_SIZE );
-			if( !fpga.valid ) {
-				if(strcmp(argv[1],"-s") == 0)
-					printf("FPGA_NO_CONNECTION\n");
-				fprintf(stderr, "Error: Couldn't establish connection with FPGA.\n");
-				return -1;
-			}
-			fir = open_fir(&fpga); 
+	if(!was_bitstream_loaded()){
+		if(print_status) printf("FPGA_NO_BITSTREAM\n");
+		printf("Error: No bitstream was loaded (or it wasn't loaded by lconf).\n");
+		return -1;
+	}
+
+	fpga_t fpga = fpga_connect( FPGA_BASE_ADDR, FPGA_MEM_SIZE );
+	if( !fpga.valid ) {
+		if(print_status) printf("FPGA_NO_CONNECTION\n");
+		fprintf(stderr, "Error: Couldn't establish connection with FPGA.\n");
+		return -1;
+	}
+	fir_t fir = open_fir(&fpga); 
+
+	if(strncmp(fir.conf->info, FIR_VER, strlen(FIR_VER)) != 0){
+		if(print_status) printf("FPGA_BAD_BITSTREAM\n");
+		fprintf(stderr, "FIR version is %.12s while %s* is expected\n", fir.conf->info, FIR_VER);
+		return -1;
+	}
+	if(print_status) printf("FPGA_OK\n");
+
+
 
 	for(int i=1; i < argc; i++) {
-
-		if(strcmp(argv[i],"-s") == 0) { //Sprawdzić, czy jest poprawny bitstream
-			if(strncmp(fir.conf->info, "FIR", 3) != 0){
-				printf("FPGA_BAD_BITSTREAM\n");
-				return -1;
-			}
-			printf("FPGA_OK\n");
-			continue;
-		} // -p
-
 		if(strcmp(argv[i],"-t") == 0 || strcmp(argv[i],"--tm") == 0) { // zwraca rząd multipleksowania w czasie
-			printf("%d\n", fir.conf->tm);
-			continue;
+			printf("%d\n", fir.conf->tm); continue;
 		} // -t
 
 		if(strcmp(argv[i], "--coef-sizeof") == 0) {
-			printf("%ld\n", sizeof(coef_t));
+			printf("%d\n", sizeof(coef_t)); continue;
 		}
 
 		if(strcmp(argv[i],"-l") == 0 || strcmp(argv[i],"--load") == 0) { // ładowanie współczynników
@@ -54,35 +56,29 @@ int main(int argc, char ** argv){
 				return -1;
 			}
 			continue;
-
-		} // -l
+		}
 
 		if(strcmp(argv[i],"--ndw") == 0) { // wypisanie maksymalnej liczby współczynników
-			printf("%d\n", fir.conf->coefs_dwsamp_nr); 
-			continue;
-		} // -c
+			printf("%d\n", fir.conf->coefs_dwsamp_nr); continue;
+		}
 
 		if(strcmp(argv[i],"--nup") == 0) { // wypisanie maksymalnej liczby współczynników
-			printf("%d\n", fir.conf->coefs_upsamp_nr); 
-			continue;
-		} // -c
+			printf("%d\n", fir.conf->coefs_upsamp_nr); continue;
+		}
 
 		if(strcmp(argv[i],"--ncf") == 0 || strcmp(argv[i],"-n") == 0) { // wypisanie maksymalnej liczby współczynników
-			printf("%d\n",fir.conf->coefs_max_nr);
-			continue;
+			printf("%d\n",fir.conf->coefs_max_nr); continue;
+		}
+
+		if(strcmp(argv[i],"--pdw") == 0) { // wypisanie precyzji współczynników
+			printf("%d\n", fir.conf->src_coef_mag); continue;
+		}
+
+		if(strcmp(argv[i],"--pup") == 0) { // wypisanie precyzji współczynników
+			printf("%d\n", fir.conf->src_coef_mag); continue;
 		} // -c
 
-		if(strcmp(argv[i],"--pdw") == 0) { // wypisanie maksymalnej liczby współczynników
-			printf("%d\n", fir.conf->src_coef_mag); 
-			continue;
-		} // -c
-
-		if(strcmp(argv[i],"--pup") == 0) { // wypisanie maksymalnej liczby współczynników
-			printf("%d\n", fir.conf->src_coef_mag); 
-			continue;
-		} // -c
-
-		if(strcmp(argv[i],"--pcf") == 0 || strcmp(argv[i],"-p") == 0) { // wypisanie maksymalnej liczby współczynników
+		if(strcmp(argv[i],"--pcf") == 0 || strcmp(argv[i],"-p") == 0) { // wypisanie precyzji współczynników
 			printf("%d\n",fir.conf->fir_coef_mag);
 			continue;
 		} // -c

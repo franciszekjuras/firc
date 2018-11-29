@@ -11,6 +11,10 @@
 //     return file;
 // }
 
+int was_bitstream_loaded(){
+  return (access("/tmp/lconf_ld", F_OK)==0);
+}
+
 void* file_to_mem(const char* src, long* size){
   *size = 0;
   FILE * f_src;
