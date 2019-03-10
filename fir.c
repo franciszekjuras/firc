@@ -6,7 +6,7 @@ fir_t open_fir(const fpga_t* fpga){
     fir.coefs = ((int32_t*)(fpga->addr)) + (fir.conf->fir_coefs_base << BASE_SHIFT);
     fir.upsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->upsamp_coefs_base << BASE_SHIFT);
     fir.dwsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->dwsamp_coefs_base << BASE_SHIFT);
-    fir.samples = ((int32_t*)(fpga->addr)) + FIR_SAMPLES_OFF;
+    //fir.samples = ((int32_t*)(fpga->addr)) + FIR_SAMPLES_OFF;
 
     SWITCH_ON(SWITCH_CON_EST, fir.conf->switches);
 
@@ -71,7 +71,7 @@ int load_coefs_up(fir_t fir, coef_t* coefs){
     fprintf(stderr, "Writing %d upsampling coefs to FPGA... ", fir.conf->coefs_upsamp_nr);
         int k = 0; int tm = fir.conf->tm; 
         int dsp_nr = fir.conf->upsamp_dsp_nr;
-        coef_t mult = (coef_t)(1<<(fir.conf->src_coef_mag));
+        coef_t mult = (coef_t)((1<<(fir.conf->src_coef_mag)) * fir.conf->tm);
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = 0; i < tm; ++i)
                 fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = (int32_t)round(mult*coefs[k++]);

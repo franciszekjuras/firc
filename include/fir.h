@@ -11,22 +11,10 @@ struct fir_s; typedef struct fir_s fir_t;
 #define SWITCH_CON_EST 0
 #define SWITCH_FIR_EN 1
 #define SWITCH_FIR_UPDATE 2
-#define SWITCH_FIR_SNAP 5
 
 //offsets in fpga 32-bit addressing
 #define BASE_SHIFT 7
-#define FIR_COEFS_BASE 1
-#define FIR_UPSAMPL_COEFS_BASE 81
-#define FIR_DWSAMPL_COEFS_BASE 101
-#define FIR_SAMPLES_OFF 1024
 
-#define FIR_SAMPLES_NR 10
-#define FIR_SAMPLES_DEPTH 5
-#define FIR_BLOCK_SAMPLES_NR 1024
-#define FIR_DEBUG_BLOCKS_NR 20
-
-#define FIR_MAX_COEFS 10000
-#define FIR_MAX_SRC_COEFS 3000
 #define SWITCH_ON(bit,var) ((var)|=(1<<(bit)))
 #define SWITCH_OFF(bit,var) ((var)&=(~(1<<(bit))))
 
@@ -37,13 +25,13 @@ struct fir_conf_s{
 		
 /*4*/	int32_t coefs_max_nr; 
 /*5*/	int32_t coefs_upsamp_nr;
-/*6*/	int32_t coefs_dwsamp_nr;
+/*6*/	int32_t coefs_dwsamp_nr; //jedno do wywalenia
 /*7*/	int32_t unused7;
 
 /*8*/	int32_t tm; // rząd multipleksowania
 /*9*/	int32_t fir_dsp_nr;
 /*10*/	int32_t upsamp_dsp_nr;
-/*11*/	int32_t dwsamp_dsp_nr;
+/*11*/	int32_t dwsamp_dsp_nr; //jedno do wywalenia
 
 /*12*/	int32_t fir_coef_mag; // przecinek
 /*13*/	int32_t src_coef_mag;
@@ -69,7 +57,7 @@ struct fir_s{
 	int32_t* coefs;
 	int32_t* dwsamp_coefs;
 	int32_t* upsamp_coefs;
-	int32_t* samples;
+	//int32_t* samples;
 };
 
 fir_t open_fir(const fpga_t* fpga);
