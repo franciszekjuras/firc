@@ -3,9 +3,9 @@
 fir_t open_fir(const fpga_t* fpga){
     fir_t fir;  
     fir.conf  = (fir_conf_t*)fpga->addr;
-    fir.coefs = ((int32_t*)(fpga->addr)) + (fir.conf->fir_coefs_base << BASE_SHIFT);
-    fir.upsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->upsamp_coefs_base << BASE_SHIFT);
-    fir.dwsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->dwsamp_coefs_base << BASE_SHIFT);
+    fir.coefs = ((int32_t*)(fpga->addr)) + (fir.conf->fir_coefs_base << fir.conf->base_shift);
+    fir.upsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->upsamp_coefs_base << fir.conf->base_shift);
+    fir.dwsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->dwsamp_coefs_base << fir.conf->base_shift);
     //fir.samples = ((int32_t*)(fpga->addr)) + FIR_SAMPLES_OFF;
 
     SWITCH_ON(SWITCH_CON_EST, fir.conf->switches);
@@ -35,58 +35,59 @@ coef_t* open_coefs(const char* src, int coefs_nr){
 int zero_coefs(fir_t fir){
     fprintf(stderr, "Clearing coefs... ");
         int tm = fir.conf->tm;
+        int bs = fir.conf->base_shift;
         int dsp_nr;
-        dsp_nr = fir.conf->dwsamp_dsp_nr;
+        dsp_nr = fir.conf->src_dsp_nr;
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = 0; i < tm; ++i)
-                fir.dwsamp_coefs[(j<<BASE_SHIFT)+i] = 0;
+                fir.dwsamp_coefs[(j<<bs)+i] = 0;
 
-        dsp_nr = fir.conf->upsamp_dsp_nr;
+        dsp_nr = fir.conf->src_dsp_nr;
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = 0; i < tm; ++i)
-                fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = 0;
+                fir.upsamp_coefs[(j<<bs)+i] = 0;
 
         dsp_nr = fir.conf->fir_dsp_nr;
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = 0; i < tm; ++i)
-                fir.coefs[(j<<BASE_SHIFT)+i] = 0;
+                fir.coefs[(j<<bs)+i] = 0;
 
         fprintf(stderr, "Done.\n");
     return 0;
 }
 
 int load_coefs_dw(fir_t fir, coef_t* coefs){
-    fprintf(stderr, "Writing %d downsampling coefs to FPGA... ", fir.conf->coefs_dwsamp_nr);
-        int k = 0; int tm = fir.conf->tm; 
-        int dsp_nr = fir.conf->dwsamp_dsp_nr;
+    fprintf(stderr, "Writing %d downsampling coefs to FPGA... ", fir.conf->src_coefs_nr);
+        int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
+        int dsp_nr = fir.conf->src_dsp_nr;
         coef_t mult = (coef_t)(1<<(fir.conf->src_coef_mag));
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = tm-1; i >= 0; --i)
-                fir.dwsamp_coefs[(j<<BASE_SHIFT)+i] = (int32_t)round(mult*coefs[k++]);
+                fir.dwsamp_coefs[(j<<bs)+i] = (int32_t)round(mult*coefs[k++]);
         
         fprintf(stderr, "Done.\n");
     return 0;
 }
 int load_coefs_up(fir_t fir, coef_t* coefs){
-    fprintf(stderr, "Writing %d upsampling coefs to FPGA... ", fir.conf->coefs_upsamp_nr);
-        int k = 0; int tm = fir.conf->tm; 
-        int dsp_nr = fir.conf->upsamp_dsp_nr;
+    fprintf(stderr, "Writing %d upsampling coefs to FPGA... ", fir.conf->src_coefs_nr);
+        int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
+        int dsp_nr = fir.conf->src_dsp_nr;
         coef_t mult = (coef_t)((1<<(fir.conf->src_coef_mag)) * fir.conf->tm);
         for(int j = 0; j < dsp_nr; ++j)
             for(int i = 0; i < tm; ++i)
-                fir.upsamp_coefs[(j<<BASE_SHIFT)+i] = (int32_t)round(mult*coefs[k++]);
+                fir.upsamp_coefs[(j<<bs)+i] = (int32_t)round(mult*coefs[k++]);
 
         fprintf(stderr, "Done.\n");
     return 0;
 }
 int load_coefs_fir(fir_t fir, coef_t* coefs){
-    fprintf(stderr, "Writing %d FIR coefs to FPGA... ", fir.conf->coefs_max_nr);
-        int k = 0; int tm = fir.conf->tm;
+    fprintf(stderr, "Writing %d FIR coefs to FPGA... ", fir.conf->fir_coefs_nr);
+        int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
         int dsp_nr = fir.conf->fir_dsp_nr;
         coef_t mult = (coef_t)(1<<(fir.conf->fir_coef_mag));
         for(int i = 0; i < tm; ++i)
             for(int j = 0; j < dsp_nr; ++j)
-                fir.coefs[(j<<BASE_SHIFT)+i] = (int32_t)round(mult*coefs[k++]);
+                fir.coefs[(j<<bs)+i] = (int32_t)round(mult*coefs[k++]);
 
         fprintf(stderr, "Done.\n");
     return 0;

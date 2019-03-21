@@ -2,7 +2,7 @@
 #define _fpga_h_
 
 #define FPGA_BASE_ADDR 0x43C00000
-#define FPGA_MEM_SIZE 1024*64 //64K
+#define FPGA_MEM_SIZE 1024*1024*4 //4M
 
 struct fpga_s;
 typedef struct fpga_s fpga_t;

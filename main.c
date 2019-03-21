@@ -37,8 +37,8 @@ int main(int argc, char ** argv){
 		}
 
 		if(strcmp(argv[i],"--load") == 0) {
-			coef_t* src_coefs = open_coefs("/tmp/srcker.dat", fir.conf->coefs_dwsamp_nr);
-			coef_t* fir_coefs = open_coefs("/tmp/firker.dat", fir.conf->coefs_max_nr);
+			coef_t* src_coefs = open_coefs("/tmp/srcker.dat", fir.conf->src_coefs_nr);
+			coef_t* fir_coefs = open_coefs("/tmp/firker.dat", fir.conf->fir_coefs_nr);
 			if(src_coefs == NULL || fir_coefs == NULL){
 				fprintf(stderr, "Error reading coefficients.\n");
 				free(fir_coefs); free(src_coefs);
@@ -58,15 +58,15 @@ int main(int argc, char ** argv){
 		}
 
 		if(strcmp(argv[i],"-sr") == 0 || strcmp(argv[i],"--src-rank") == 0){ 
-			printf("%d\n", fir.conf->coefs_dwsamp_nr); continue;
+			printf("%d\n", fir.conf->src_coefs_nr); continue;
 		}
 
 		if(strcmp(argv[i],"-fr") == 0 || strcmp(argv[i],"--fir-rank") == 0){ 
-			printf("%d\n",fir.conf->coefs_max_nr); continue;
+			printf("%d\n",fir.conf->fir_coefs_nr); continue;
 		}
 
 		if(strcmp(argv[i],"-sb") == 0 || strcmp(argv[i],"--src-blocks") == 0){ 
-			printf("%d\n", fir.conf->dwsamp_dsp_nr); continue;
+			printf("%d\n", fir.conf->src_dsp_nr); continue;
 		}
 
 		if(strcmp(argv[i],"-fb") == 0 || strcmp(argv[i],"--fir-blocks") == 0){ 
