@@ -45,8 +45,10 @@ struct fir_conf_s{
 		//read|write
 /*20*/	uint32_t switches; // zmienna zawierajaca bity kontrolne
 /*21*/	int32_t user_var; // zmienna (read/write) do dowolnego wykorzystania
-/*22*/	int32_t unused22;
-/*23*/	int32_t unused23;
+/*22*/	int32_t dbg_wr_addr;
+/*23*/	int32_t dbg_wr_data;
+
+/*22*/	int32_t dbg_offset;
 
 /*24*/	//int32_t crr_debug_block;
 /*25:27*/	//int32_t debug_source[3];
@@ -57,7 +59,7 @@ struct fir_s{
 	int32_t* coefs;
 	int32_t* dwsamp_coefs;
 	int32_t* upsamp_coefs;
-	//int32_t* samples;
+	int32_t* samples;
 };
 
 fir_t open_fir(const fpga_t* fpga);

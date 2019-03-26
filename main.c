@@ -82,6 +82,11 @@ int main(int argc, char ** argv){
 			continue;
 		}
 
+		if(strcmp(argv[i],"-bs") == 0 || strcmp(argv[i],"--base-shift") == 0){ 
+			printf("%d\n",fir.conf->base_shift);
+			continue;
+		}
+
 		if(strcmp(argv[i],"--enable") == 0){
 			SWITCH_ON(SWITCH_FIR_EN, fir.conf->switches);
 		}

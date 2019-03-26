@@ -6,7 +6,7 @@ fir_t open_fir(const fpga_t* fpga){
     fir.coefs = ((int32_t*)(fpga->addr)) + (fir.conf->fir_coefs_base << fir.conf->base_shift);
     fir.upsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->upsamp_coefs_base << fir.conf->base_shift);
     fir.dwsamp_coefs = ((int32_t*)(fpga->addr)) + (fir.conf->dwsamp_coefs_base << fir.conf->base_shift);
-    //fir.samples = ((int32_t*)(fpga->addr)) + FIR_SAMPLES_OFF;
+    fir.samples = ((int32_t*)(fpga->addr)) + fir.conf->dbg_offset;
 
     SWITCH_ON(SWITCH_CON_EST, fir.conf->switches);
 
@@ -81,14 +81,25 @@ int load_coefs_up(fir_t fir, coef_t* coefs){
     return 0;
 }
 int load_coefs_fir(fir_t fir, coef_t* coefs){
+    FILE* dbgWrF = fopen("/tmp/dbgwr.txt", "w");
+    FILE* dbgCfF = fopen("/tmp/dbgcoefs.txt", "w");
+
+
     fprintf(stderr, "Writing %d FIR coefs to FPGA... ", fir.conf->fir_coefs_nr);
         int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
         int dsp_nr = fir.conf->fir_dsp_nr;
         coef_t mult = (coef_t)(1<<(fir.conf->fir_coef_mag));
         for(int i = 0; i < tm; ++i)
-            for(int j = 0; j < dsp_nr; ++j)
+            for(int j = 0; j < dsp_nr; ++j){
                 fir.coefs[(j<<bs)+i] = (int32_t)round(mult*coefs[k++]);
+                fprintf(dbgWrF, "%o %d %o %d\n", (j<<bs)+i, (int32_t)round(mult*coefs[k++]), fir.conf->dbg_wr_addr, fir.conf->dbg_wr_data);
+            }
 
         fprintf(stderr, "Done.\n");
+
+    for(int i = 0; i < tm; ++i)
+        fprintf(dbgCfF, "%d %d\n", (int32_t)round(mult*coefs[i * dsp_nr]), fir.samples[i]);
+    fclose(dbgWrF);fclose(dbgCfF);
+
     return 0;
 }
