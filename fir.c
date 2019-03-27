@@ -92,7 +92,7 @@ int load_coefs_fir(fir_t fir, coef_t* coefs){
         for(int i = 0; i < tm; ++i)
             for(int j = 0; j < dsp_nr; ++j){
                 fir.coefs[(j<<bs)+i] = (int32_t)round(mult*coefs[k++]);
-                fprintf(dbgWrF, "%o %d %o %d\n", (j<<bs)+i, (int32_t)round(mult*coefs[k++]), fir.conf->dbg_wr_addr, fir.conf->dbg_wr_data);
+                fprintf(dbgWrF, "%o %d %o %d\n", (j<<bs)+i, (int32_t)round(mult*coefs[k-1]), fir.conf->dbg_wr_addr, fir.conf->dbg_wr_data);
             }
 
         fprintf(stderr, "Done.\n");
