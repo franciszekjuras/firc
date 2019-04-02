@@ -58,6 +58,7 @@ int zero_coefs(fir_t fir){
 
 int load_coefs_dw(fir_t fir, coef_t* coefs){
     FILE* dbgWrF = fopen("/tmp/dbgwrdw.txt", "w");
+    FILE* dbgCfF = fopen("/tmp/dbgcoefsdw.txt", "w");
 
     fprintf(stderr, "Writing %d downsampling coefs to FPGA... ", fir.conf->src_coefs_nr);
         int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
@@ -70,11 +71,14 @@ int load_coefs_dw(fir_t fir, coef_t* coefs){
             }
         
         fprintf(stderr, "Done.\n");
-    fclose(dbgWrF);
+    for(int i = 0; i < tm; ++i)
+        fprintf(dbgCfF, "%d %d\n", (int32_t)round(mult*coefs[tm-i-1]), fir.samples[tm+i]);
+    fclose(dbgWrF);fclose(dbgCfF);
     return 0;
 }
 int load_coefs_up(fir_t fir, coef_t* coefs){
     FILE* dbgWrF = fopen("/tmp/dbgwrup.txt", "w");
+    FILE* dbgCfF = fopen("/tmp/dbgcoefsup.txt", "w");
 
     fprintf(stderr, "Writing %d upsampling coefs to FPGA... ", fir.conf->src_coefs_nr);
         int k = 0; int tm = fir.conf->tm; int bs = fir.conf->base_shift;
@@ -87,7 +91,11 @@ int load_coefs_up(fir_t fir, coef_t* coefs){
             }
 
         fprintf(stderr, "Done.\n");
-    fclose(dbgWrF);
+
+    for(int i = 0; i < tm; ++i)
+        fprintf(dbgCfF, "%d %d\n", (int32_t)round(mult*coefs[i]), fir.samples[tm+tm+i]);
+    fclose(dbgWrF);fclose(dbgCfF);
+
     return 0;
 }
 int load_coefs_fir(fir_t fir, coef_t* coefs){
