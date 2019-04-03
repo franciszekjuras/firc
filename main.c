@@ -91,32 +91,32 @@ int main(int argc, char ** argv){
 		if(strcmp(argv[i],"--enable") == 0){
 			SWITCH_ON(SWITCH_FIR_EN, fir.conf->switches);
 
-			//debug
+			// //debug
 
-			SWITCH_ON(SWITCH_FIR_SNAP, fir.conf->switches);
+			// SWITCH_ON(SWITCH_FIR_SNAP, fir.conf->switches);
 
-		    nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
-
-
-		    SWITCH_OFF(SWITCH_FIR_SNAP, fir.conf->switches);
+			// nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
 
 
-		    FILE* dbg1 = fopen("/tmp/dbg_dws_endacc_out.txt", "w");
-		    FILE* dbg2 = fopen("/tmp/dbg_dws_out.txt", "w");
-		    FILE* dbg3 = fopen("/tmp/dbg_fir_in.txt", "w");
-		    FILE* dbg4 = fopen("/tmp/dbg_fir_sample_con0.txt", "w");
-		    int tm = fir.conf->tm; 
-		    for(int i = 0; i < tm; ++i)
-		        fprintf(dbg1, "%d\n", fir.samples[i]);
-		    for(int i = 0; i < tm; ++i)
-		        fprintf(dbg2, "%d\n", fir.samples[tm+i]);
-		    for(int i = 0; i < tm; ++i)
-		        fprintf(dbg3, "%d\n", fir.samples[(2*tm)+i]);
-		    for(int i = 0; i < tm; ++i)
-		        fprintf(dbg4, "%d\n", fir.samples[(3*tm)+i]);
-		    fclose(dbg1);fclose(dbg2);fclose(dbg3);fclose(dbg4);
+			// SWITCH_OFF(SWITCH_FIR_SNAP, fir.conf->switches);
 
-		    //debug end
+
+			// FILE* dbg1 = fopen("/tmp/dbg_dws_endacc_out.txt", "w");
+			// FILE* dbg2 = fopen("/tmp/dbg_dws_out.txt", "w");
+			// FILE* dbg3 = fopen("/tmp/dbg_fir_in.txt", "w");
+			// FILE* dbg4 = fopen("/tmp/dbg_fir_sample_con0.txt", "w");
+			// int tm = fir.conf->tm; 
+			// for(int i = 0; i < tm; ++i)
+			// 	fprintf(dbg1, "%d\n", fir.samples[i]);
+			// for(int i = 0; i < tm; ++i)
+			// 	fprintf(dbg2, "%d\n", fir.samples[tm+i]);
+			// for(int i = 0; i < tm; ++i)
+			// 	fprintf(dbg3, "%d\n", fir.samples[(2*tm)+i]);
+			// for(int i = 0; i < tm; ++i)
+			// 	fprintf(dbg4, "%d\n", fir.samples[(3*tm)+i]);
+			// fclose(dbg1);fclose(dbg2);fclose(dbg3);fclose(dbg4);
+
+			// //debug end
 		}
 
 		if(strcmp(argv[i],"--disable") == 0){
