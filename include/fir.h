@@ -12,6 +12,8 @@ struct fir_s; typedef struct fir_s fir_t;
 #define SWITCH_FIR_EN 1
 #define SWITCH_FIR_UPDATE 2
 
+#define SWITCH_FIR_SNAP 5
+
 //offsets in fpga 32-bit addressing
 //#define BASE_SHIFT 7
 
